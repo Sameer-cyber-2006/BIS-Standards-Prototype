@@ -113,42 +113,82 @@ public class ProcurementService {
                 "Use"
         );
 
-        List<String> technicalRequirements = new ArrayList<>();
+       List<String> technicalRequirements = new ArrayList<>();
 
-        addIfFound(
-                technicalRequirements,
-                normalizedText,
-                "UV resistant",
-                "UV resistant"
-        );
+// Electrical requirements
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Rated Voltage",
+        "Rated Voltage 230 V AC"
+);
 
-        addIfFound(
-                technicalRequirements,
-                normalizedText,
-                "Leak proof",
-                "Leak proof construction"
-        );
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Rated Power",
+        "Rated Power 1500 W"
+);
 
-        addIfFound(
-                technicalRequirements,
-                normalizedText,
-                "Food grade",
-                "Food grade material"
-        );
+// Safety requirements
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Safety",
+        "Safety Automatic shut-off and boil-dry protection"
+);
 
-        addIfFound(
-                technicalRequirements,
-                normalizedText,
-                "Industrial grade",
-                "Industrial grade material"
-        );
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Automatic shut-off",
+        "Automatic shut-off"
+);
 
-        addIfFound(
-                technicalRequirements,
-                normalizedText,
-                "Corrosion resistant",
-                "Corrosion resistant"
-        );
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "boil-dry",
+        "Boil-dry protection"
+);
+
+// Construction
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Leak proof",
+        "Leak proof construction"
+);
+
+// Material quality
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Food grade",
+        "Food grade material"
+);
+
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Industrial grade",
+        "Industrial grade material"
+);
+
+// Surface / durability
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "UV resistant",
+        "UV resistant"
+);
+
+addIfFound(
+        technicalRequirements,
+        normalizedText,
+        "Corrosion resistant",
+        "Corrosion resistant"
+);
 
         // Show some extracted text if no technical requirement
         // keywords were detected.

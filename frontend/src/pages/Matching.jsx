@@ -84,8 +84,7 @@ export default function Matching() {
         <div className="card">
           <div className="eyebrow">PRODUCT REQUIREMENTS</div>
           <div className="grid grid-4" style={{ marginTop: 8 }}>
-            <div><div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Category</div><div style={{ fontWeight: 600 }}>{extracted.application}</div></div>
-            <div><div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Material</div><div style={{ fontWeight: 600 }}>{extracted.material}</div></div>
+<div><div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Category</div><div style={{ fontWeight: 600 }}>{extracted.product}</div></div>            <div><div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Material</div><div style={{ fontWeight: 600 }}>{extracted.material}</div></div>
             <div><div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Capacity</div><div style={{ fontWeight: 600 }}>{extracted.capacity}</div></div>
             <div><div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Application</div><div style={{ fontWeight: 600 }}>{extracted.application}</div></div>
           </div>
