@@ -54,48 +54,77 @@ export default function SchemeDetails() {
     setGeneratingReport(false)
   }
 
+  // Builds the same kind of print-ready HTML document used by the BIS
+  // Compliance Analysis Report (see Reports.jsx / buildReportHtml). Opening
+  // it in a new tab and calling window.print() lets the user pick
+  // "Save as PDF" in the browser's print dialog - so both reports now
+  // download as an actual PDF instead of a plain .txt file.
+  function buildSchemeReportHtml(r) {
+    const { scheme: rs, eligibility: re } = r
+    const li = (items) => items.map((i) => `<li>${i}</li>`).join('')
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${r.reportId}</title>
+    <style>
+      body{font-family:Georgia,serif; max-width:700px; margin:40px auto; color:#172033;}
+      h1{font-size:20px; border-bottom:2px solid #14324F; padding-bottom:10px;}
+      h4{font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:#1E7F6E; margin-top:24px; margin-bottom:6px;}
+      .row{display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:6px 0; font-size:14px;}
+      .foot{margin-top:30px; padding-top:14px; border-top:1px solid #ccc; font-size:11px; color:#666;}
+      ul{margin:4px 0; padding-left:20px; font-size:13px;}
+    </style></head><body>
+      <h1>Government Scheme Report</h1>
+      <p style="font-size:12px; color:#666;">Report ID: ${r.reportId} &middot; Generated: ${r.generatedDate}</p>
+      <h4>Scheme</h4>
+      <div class="row"><span>${rs.schemeName}</span><b>${rs.department}</b></div>
+      <h4>Target Beneficiaries</h4>
+      <p style="font-size:13px;">${rs.targetBeneficiaries}</p>
+      <h4>Sector &amp; Applicability</h4>
+      <p style="font-size:13px;">${rs.sector} &middot; ${rs.location}</p>
+      <h4>Eligibility Criteria</h4>
+      <ul>${li(rs.eligibilityCriteria)}</ul>
+      <h4>Benefits</h4>
+      <p style="font-size:13px;">${rs.benefits}</p>
+      <h4>Required Documents</h4>
+      <ul>${li(rs.requiredDocuments)}</ul>
+      <h4>Application Information</h4>
+      <p style="font-size:13px;">${rs.applicationInfo}</p>
+      ${re ? `
+      <h4>Eligibility Status</h4>
+      <div class="row"><span>${re.eligibilityStatus}</span><b>${re.score}% score</b></div>
+      <h4>Matched Criteria</h4>
+      <ul>${li(re.matchedCriteria)}</ul>
+      <h4>Unmatched Criteria</h4>
+      <ul>${li(re.unmatchedCriteria)}</ul>
+      ` : ''}
+      <div class="foot">Disclaimer: This report is a preliminary assessment based on the information provided by the user. Final eligibility, approval and benefits are subject to the rules and decision of the concerned government authority.</div>
+    </body></html>`
+  }
+
   function downloadGeneratedReport() {
     if (!generatedReport) return
-    const { scheme: reportScheme, eligibility: reportEligibility } = generatedReport
-    const lines = [
-      'GOVERNMENT SCHEME REPORT',
-      `Report ID: ${generatedReport.reportId}`,
-      `Generated: ${generatedReport.generatedDate}`,
-      '',
-      `Scheme: ${reportScheme.schemeName}`,
-      `Department: ${reportScheme.department}`,
-      `Target Beneficiaries: ${reportScheme.targetBeneficiaries}`,
-      `Sector & Applicability: ${reportScheme.sector} · ${reportScheme.location}`,
-      '',
-      'Eligibility Criteria:',
-      ...reportScheme.eligibilityCriteria.map((item) => `- ${item}`),
-      '',
-      `Benefits: ${reportScheme.benefits}`,
-      '',
-      'Required Documents:',
-      ...reportScheme.requiredDocuments.map((item) => `- ${item}`),
-      '',
-      `Application Information: ${reportScheme.applicationInfo}`,
-      '',
-      ...(reportEligibility ? [
-        `Eligibility Status: ${reportEligibility.eligibilityStatus}`,
-        `Eligibility Score: ${reportEligibility.score}%`,
-        '',
-        'Matched Criteria:',
-        ...reportEligibility.matchedCriteria.map((item) => `- ${item}`),
-        '',
-        'Unmatched Criteria:',
-        ...reportEligibility.unmatchedCriteria.map((item) => `- ${item}`),
-        '',
-      ] : []),
-      'Disclaimer: This report is a preliminary assessment based on the information provided by the user. Final eligibility, approval and benefits are subject to the rules and decision of the concerned government authority.',
-    ]
+    setError(null)
+    const html = buildSchemeReportHtml(generatedReport)
+    const printWindow = window.open('', '_blank', 'width=800,height=900')
+    if (!printWindow) {
+      setError('Your browser blocked the report window. Please allow pop-ups for this site and try again, or use "Download as HTML file" below.')
+      return
+    }
+    printWindow.document.open()
+    printWindow.document.write(html)
+    printWindow.document.close()
+    // Give the new tab a moment to paint before triggering the print dialog.
+    printWindow.onload = () => { printWindow.focus(); printWindow.print() }
+    setTimeout(() => { try { printWindow.focus(); printWindow.print() } catch (e) {} }, 400)
+  }
 
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+  function downloadGeneratedReportHtmlFile() {
+    if (!generatedReport) return
+    setError(null)
+    const html = buildSchemeReportHtml(generatedReport)
+    const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = `${reportScheme.schemeName.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}-report.txt`
+    anchor.download = `${generatedReport.reportId}.html`
     document.body.appendChild(anchor)
     anchor.click()
     anchor.remove()
@@ -174,10 +203,22 @@ export default function SchemeDetails() {
               </button>
             </div>
             {generatedReport && (
-              <div className="check-item ok" style={{ marginTop: 12 }}>
-                <div className="mark">&#10003;</div>
-                Report generated successfully · {generatedReport.reportId}
-              </div>
+              <>
+                <div className="check-item ok" style={{ marginTop: 12 }}>
+                  <div className="mark">&#10003;</div>
+                  Report generated successfully · {generatedReport.reportId}
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 8 }}>
+                  Opens a print-ready view — choose "Save as PDF" in the print dialog to download it. Pop-ups must be
+                  allowed for this site. Prefer a plain file?{' '}
+                  <span
+                    style={{ color: 'var(--navy)', textDecoration: 'underline', cursor: 'pointer' }}
+                    onClick={downloadGeneratedReportHtmlFile}
+                  >
+                    Download as HTML file
+                  </span> instead.
+                </p>
+              </>
             )}
           </div>
 
