@@ -25,14 +25,16 @@ public class ProcurementService {
             throw new IllegalArgumentException("Please upload a PDF file.");
         }
 
-        if (!file.getOriginalFilename().toLowerCase().endsWith(".pdf")) {
+        if (file.getOriginalFilename() == null ||
+                !file.getOriginalFilename().toLowerCase().endsWith(".pdf")) {
             throw new IllegalArgumentException("Only PDF files are supported.");
         }
 
         try {
-            // 1. Extract text from PDF using PDFBox
-            // 2. If PDF has little/no text, PdfExtractionService automatically
-            //    tries Tesseract OCR.
+
+            // Extract text using PDFBox.
+            // If PDF has little/no text, PdfExtractionService
+            // automatically uses Tesseract OCR.
             PdfExtractionService.ExtractionResult result =
                     pdfExtractionService.extract(file.getBytes());
 
@@ -49,24 +51,38 @@ public class ProcurementService {
             System.out.println("===== OCR USED: " + result.usedOcr + " =====");
             System.out.println("===== PAGE COUNT: " + result.pageCount + " =====");
 
-            // Extract basic procurement details from the extracted text
             return extractRequirements(text);
 
         } catch (Exception e) {
+
             throw new IllegalArgumentException(
-                    "Could not analyze the uploaded PDF: " + e.getMessage(), e
+                    "Could not analyze the uploaded PDF: " + e.getMessage(),
+                    e
             );
         }
     }
 
     private ProcurementRequirement extractRequirements(String text) {
 
-        String normalizedText = text.replace("\r", " ")
-                .replace("\n", " ")
-                .replaceAll("\\s+", " ")
+        /*
+         * Keep line breaks because the procurement PDF contains
+         * fields such as:
+         *
+         * Product: Electric Kettle
+         * Material: Stainless Steel
+         * Capacity: 1.5 Litres
+         * Application: Household and Office Use
+         *
+         * Removing line breaks was causing the complete remaining
+         * PDF text to be assigned to one field.
+         */
+        String normalizedText = text
+                .replace("\r", "")
+                .replaceAll("[ \\t]+", " ")
                 .trim();
 
-        String product = findValue(normalizedText,
+        String product = findValue(
+                normalizedText,
                 "Product",
                 "Product Name",
                 "Item",
@@ -75,19 +91,22 @@ public class ProcurementService {
                 "Material Name"
         );
 
-        String material = findValue(normalizedText,
+        String material = findValue(
+                normalizedText,
                 "Material",
                 "Material Type",
                 "Construction Material"
         );
 
-        String capacity = findValue(normalizedText,
+        String capacity = findValue(
+                normalizedText,
                 "Capacity",
                 "Storage Capacity",
                 "Volume"
         );
 
-        String application = findValue(normalizedText,
+        String application = findValue(
+                normalizedText,
                 "Application",
                 "Intended Use",
                 "Usage",
@@ -96,34 +115,43 @@ public class ProcurementService {
 
         List<String> technicalRequirements = new ArrayList<>();
 
-        addIfFound(technicalRequirements, normalizedText,
+        addIfFound(
+                technicalRequirements,
+                normalizedText,
                 "UV resistant",
                 "UV resistant"
         );
 
-        addIfFound(technicalRequirements, normalizedText,
+        addIfFound(
+                technicalRequirements,
+                normalizedText,
                 "Leak proof",
                 "Leak proof construction"
         );
 
-        addIfFound(technicalRequirements, normalizedText,
+        addIfFound(
+                technicalRequirements,
+                normalizedText,
                 "Food grade",
                 "Food grade material"
         );
 
-        addIfFound(technicalRequirements, normalizedText,
+        addIfFound(
+                technicalRequirements,
+                normalizedText,
                 "Industrial grade",
                 "Industrial grade material"
         );
 
-        addIfFound(technicalRequirements, normalizedText,
+        addIfFound(
+                technicalRequirements,
+                normalizedText,
                 "Corrosion resistant",
                 "Corrosion resistant"
         );
 
-        // If no specific fields were detected, keep extracted text
-        // as a technical requirement so the user can see that
-        // PDF extraction actually worked.
+        // Show some extracted text if no technical requirement
+        // keywords were detected.
         if (technicalRequirements.isEmpty()) {
             technicalRequirements.add(
                     getShortExtractedText(normalizedText)
@@ -139,13 +167,23 @@ public class ProcurementService {
         );
     }
 
+    /**
+     * Finds a value written on its own labelled line.
+     *
+     * Example:
+     * Material: Stainless Steel
+     *
+     * It returns only:
+     * Stainless Steel
+     */
     private String findValue(String text, String... labels) {
 
         for (String label : labels) {
 
             Pattern pattern = Pattern.compile(
-                    "(?i)" + Pattern.quote(label)
-                            + "\\s*[:\\-]\\s*([^,;|]+)"
+                    "(?im)^\\s*"
+                            + Pattern.quote(label)
+                            + "\\s*[:\\-]\\s*(.+?)\\s*$"
             );
 
             Matcher matcher = pattern.matcher(text);
